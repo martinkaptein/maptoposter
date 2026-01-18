@@ -5,11 +5,19 @@
   "text": "#000000",
   "gradient_color": "#FFFFFF",
   "water": "#B0B0B0",
-  "parks": "#ECECEC",
   "road_motorway": "#000000",
   "road_primary": "#0F0F0F",
   "road_secondary": "#252525",
   "road_tertiary": "#404040",
   "road_residential": "#5A5A5A",
-  "road_default": "#404040"
+  "road_default": "#404040",
+  "railway": "#636363",
+  "subway": "#a1a1a1",
+  "buildings": "#ebebeb",
+  "contours": "#929292",
+  "bridge": "#0a0a0a",
+  "tunnel": "#acacac",
+  "airport": "#dfdfdf",
+  "runway": "#0c0c0c",
+  "waterway": "#c4c4c4"
 }

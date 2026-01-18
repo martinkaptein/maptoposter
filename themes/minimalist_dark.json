@@ -1,0 +1,23 @@
+{
+  "name": "Minimalist Dark",
+  "description": "Minimal, moody palette with cool greens and warm accents.",
+  "bg": "#223843",
+  "text": "#FFFFFF",
+  "gradient_color": "#223843",
+  "water": "#7CA7AC",
+  "buildings": "#2B4350",
+  "contours": "#3C5B68",
+  "railway": "#D77A61",
+  "road_motorway": "#FFFFFF",
+  "road_primary": "#D77A61",
+  "road_secondary": "#7CA7AC",
+  "road_tertiary": "#6E9075",
+  "road_residential": "#8A9AA0",
+  "road_default": "#6B858D",
+  "subway": "#8f6055",
+  "bridge": "#e5a998",
+  "tunnel": "#566972",
+  "airport": "#46646d",
+  "runway": "#df9581",
+  "waterway": "#6E9075"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Minimalist Light",
+  "description": "Clean white canvas with soft greens, teals, and terracotta accents.",
+  "bg": "#FFFFFF",
+  "text": "#223843",
+  "gradient_color": "#FFFFFF",
+  "water": "#7CA7AC",
+  "buildings": "#F2F4F5",
+  "contours": "#D8E0E2",
+  "railway": "#D77A61",
+  "road_motorway": "#223843",
+  "road_primary": "#D77A61",
+  "road_secondary": "#7CA7AC",
+  "road_tertiary": "#6E9075",
+  "road_residential": "#A7B5BB",
+  "road_default": "#8E9DA4",
+  "subway": "#e7afa0",
+  "bridge": "#986356",
+  "tunnel": "#d3dadd",
+  "airport": "#cbdcde",
+  "runway": "#b36d5b",
+  "waterway": "#6E9075"
+}

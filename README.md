@@ -5,6 +5,20 @@ Generate beautiful, minimalist map posters for any city in the world.
 <img src="posters/singapore_neon_cyberpunk_20260108_184503.png" width="250">
 <img src="posters/dubai_midnight_blue_20260108_174920.png" width="250">
 
+## Fork Overview
+
+Fork repository: https://github.com/martinkaptein/maptoposter.git  
+Upstream repository: https://github.com/originalankur/maptoposter.git
+
+What's new in this fork:
+- Center maps by coordinates (`--center "lat,lon"`) without geocoding
+- Control output size and quality (`--width`, `--height`, `--dpi`)
+- Optional text-free render (`--no-text`)
+- Extra layers: railways, subways, waterways, buildings, contours, bridges, tunnels, airports
+- New minimalist themes: `minimalist_dark`, `minimalist_light`
+
+See `CHANGELOG.md` for details.
+
 ## Examples
 
 
@@ -30,6 +44,7 @@ pip install -r requirements.txt
 
 ```bash
 python create_map_poster.py --city <city> --country <country> [options]
+python create_map_poster.py --center <lat,lon> [options]
 ```
 
 ### Options
@@ -40,6 +55,11 @@ python create_map_poster.py --city <city> --country <country> [options]
 | `--country` | `-C` | Country name | required |
 | `--theme` | `-t` | Theme name | feature_based |
 | `--distance` | `-d` | Map radius in meters | 29000 |
+| `--center` | | Map center as "lat,lon" | |
+| `--width` | | Poster width in inches | 12 |
+| `--height` | | Poster height in inches | 16 |
+| `--dpi` | | Output DPI | 300 |
+| `--no-text` | | Render map without labels or attribution | |
 | `--list-themes` | | List all available themes | |
 
 ### Examples
@@ -74,6 +94,15 @@ python create_map_poster.py -c "Budapest" -C "Hungary" -t copper_patina -d 8000 
 
 # List available themes
 python create_map_poster.py --list-themes
+
+# Center on coordinates (no geocoding)
+python create_map_poster.py --center "40.7128,-74.0060" --distance 12000 --theme noir
+
+# Higher resolution print
+python create_map_poster.py -c "Paris" -C "France" --width 18 --height 24 --dpi 300
+
+# Map only (no text)
+python create_map_poster.py -c "Tokyo" -C "Japan" --no-text
 ```
 
 ### Distance Guide
@@ -86,7 +115,7 @@ python create_map_poster.py --list-themes
 
 ## Themes
 
-17 themes available in `themes/` directory:
+19 themes available in `themes/` directory:
 
 | Theme | Style |
 |-------|-------|
@@ -107,6 +136,10 @@ python create_map_poster.py --list-themes
 | `autumn` | Seasonal burnt oranges and reds |
 | `copper_patina` | Oxidized copper aesthetic |
 | `monochrome_blue` | Single blue color family |
+| `minimalist_dark` | Minimal dark palette with warm accents |
+| `minimalist_light` | Minimal light palette with terracotta accents |
+
+Additional layers supported: railways, subways, waterways, buildings, contour lines, bridges, tunnels, and airports.
 
 ## Output
 
@@ -127,7 +160,15 @@ Create a JSON file in `themes/` directory:
   "text": "#000000",
   "gradient_color": "#FFFFFF",
   "water": "#C0C0C0",
-  "parks": "#F0F0F0",
+  "buildings": "#F5F5F5",
+  "waterway": "#B0B0B0",
+  "railway": "#556677",
+  "subway": "#556677",
+  "airport": "#DADADA",
+  "runway": "#222222",
+  "bridge": "#222222",
+  "tunnel": "#888888",
+  "contours": "#D0D0D0",
   "road_motorway": "#0A0A0A",
   "road_primary": "#1A1A1A",
   "road_secondary": "#2A2A2A",
@@ -145,6 +186,8 @@ map_poster/
 ├── themes/               # Theme JSON files
 ├── fonts/                # Roboto font files
 ├── posters/              # Generated posters
+├── CHANGELOG.md          # Fork change log
+├── CONTRIBUTING.md       # Contribution guidelines
 └── README.md
 ```
 
@@ -184,7 +227,7 @@ Quick reference for contributors who want to extend or modify the script.
 z=11  Text labels (city, country, coords)
 z=10  Gradient fades (top & bottom)
 z=3   Roads (via ox.plot_graph)
-z=2   Parks (green polygons)
+z=2   Buildings, contours, railways, waterways, subways, airports, bridges, tunnels
 z=1   Water (blue polygons)
 z=0   Background color
 ```
@@ -204,7 +247,7 @@ residential, living_street  → Thinnest (0.4), lightest
 
 **New map layer (e.g., railways):**
 ```python
-# In create_poster(), after parks fetch:
+# In create_poster(), after railways fetch:
 try:
     railways = ox.features_from_point(point, tags={'railway': 'rail'}, dist=dist)
 except:
@@ -252,3 +295,11 @@ G = ox.graph_from_point(point, dist=dist, network_type='walk')   # pedestrian
 - Cache coordinates locally to avoid Nominatim rate limits
 - Use `network_type='drive'` instead of `'all'` for faster renders
 - Reduce `dpi` from 300 to 150 for quick previews
+
+## Changelog
+
+See `CHANGELOG.md`.
+
+## Contributing
+
+See `CONTRIBUTING.md`.
