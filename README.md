@@ -60,6 +60,7 @@ python create_map_poster.py --center <lat,lon> [options]
 | `--height` | | Poster height in inches | 16 |
 | `--dpi` | | Output DPI | 300 |
 | `--no-text` | | Render map without labels or attribution | |
+| `--no-gradient` | | Render map without top/bottom gradient fades | |
 | `--list-themes` | | List all available themes | |
 
 ### Examples
@@ -103,6 +104,9 @@ python create_map_poster.py -c "Paris" -C "France" --width 18 --height 24 --dpi 
 
 # Map only (no text)
 python create_map_poster.py -c "Tokyo" -C "Japan" --no-text
+
+# No gradient fades
+python create_map_poster.py -c "Tokyo" -C "Japan" --no-gradient
 ```
 
 ### Distance Guide
@@ -141,6 +145,16 @@ python create_map_poster.py -c "Tokyo" -C "Japan" --no-text
 
 Additional layers supported: railways, subways, waterways, buildings, contour lines, bridges, tunnels, and airports.
 
+### Theme-Controlled Visibility
+
+This fork uses theme JSONs to control what renders. If a theme key is missing, that layer (or road type) is not drawn. This makes it easy to create minimalist or feature-rich styles without CLI flags.
+
+Layer keys (omit to hide):
+`water`, `waterway`, `railway`, `subway`, `buildings`, `contours`, `airport`, `runway`, `bridge`, `tunnel`
+
+Road keys (omit to hide that road class):
+`road_motorway`, `road_primary`, `road_secondary`, `road_tertiary`, `road_residential`, `road_default`
+
 ## Output
 
 Posters are saved to `posters/` directory with format:
@@ -175,6 +189,23 @@ Create a JSON file in `themes/` directory:
   "road_tertiary": "#3A3A3A",
   "road_residential": "#4A4A4A",
   "road_default": "#3A3A3A"
+}
+```
+
+Omit any key to hide that layer or road class.
+
+### Minimal Example Theme
+
+This theme shows only water and primary roads (plus background and text). Everything else is hidden by omission:
+
+```json
+{
+  "name": "Minimal Example",
+  "bg": "#FFFFFF",
+  "text": "#111111",
+  "gradient_color": "#FFFFFF",
+  "water": "#C9DDE3",
+  "road_primary": "#222222"
 }
 ```
 
@@ -295,6 +326,10 @@ G = ox.graph_from_point(point, dist=dist, network_type='walk')   # pedestrian
 - Cache coordinates locally to avoid Nominatim rate limits
 - Use `network_type='drive'` instead of `'all'` for faster renders
 - Reduce `dpi` from 300 to 150 for quick previews
+
+### Rendering Notes
+
+- The graph fetch uses `truncate_by_edge=True` and `retain_all=True` to keep long roads that cross the bounding box.
 
 ## Changelog
 

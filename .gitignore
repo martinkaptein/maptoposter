@@ -10,7 +10,8 @@ venv/
 
 .mypy_cache/
 .pytest_cache/
-
+test.py
+testing/
 cache/
 posters/*.png
 posters/*.jpg

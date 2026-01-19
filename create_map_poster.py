@@ -17,6 +17,20 @@ POSTERS_DIR = "posters"
 DEFAULT_FIGSIZE = (12, 16)
 DEFAULT_DPI = 300
 
+DEFAULT_THEME = {
+    "name": "Feature-Based Shading",
+    "bg": "#FFFFFF",
+    "text": "#000000",
+    "gradient_color": "#FFFFFF",
+    "water": "#C0C0C0",
+    "road_motorway": "#0A0A0A",
+    "road_primary": "#1A1A1A",
+    "road_secondary": "#2A2A2A",
+    "road_tertiary": "#3A3A3A",
+    "road_residential": "#4A4A4A",
+    "road_default": "#3A3A3A"
+}
+
 def load_fonts():
     """
     Load Roboto fonts from the fonts directory.
@@ -78,31 +92,14 @@ def blend_color(color, target, amount):
     return mcolors.to_hex(blended, keep_alpha=False)
 
 def apply_theme_defaults(theme):
-    theme_defaults = {
-        "name": "Feature-Based Shading",
-        "bg": "#FFFFFF",
-        "text": "#000000",
-        "gradient_color": "#FFFFFF",
-        "water": "#C0C0C0",
-        "road_motorway": "#0A0A0A",
-        "road_primary": "#1A1A1A",
-        "road_secondary": "#2A2A2A",
-        "road_tertiary": "#3A3A3A",
-        "road_residential": "#4A4A4A",
-        "road_default": "#3A3A3A"
+    base_defaults = {
+        "name": DEFAULT_THEME["name"],
+        "bg": DEFAULT_THEME["bg"],
+        "text": DEFAULT_THEME["text"],
+        "gradient_color": DEFAULT_THEME["gradient_color"]
     }
-    for key, value in theme_defaults.items():
+    for key, value in base_defaults.items():
         theme.setdefault(key, value)
-
-    theme.setdefault('railway', blend_color(theme['road_primary'], theme['bg'], 0.35))
-    theme.setdefault('subway', blend_color(theme['railway'], theme['bg'], 0.4))
-    theme.setdefault('waterway', blend_color(theme['water'], theme['bg'], 0.25))
-    theme.setdefault('buildings', blend_color(theme['bg'], theme['text'], 0.08))
-    theme.setdefault('contours', blend_color(theme['road_secondary'], theme['bg'], 0.5))
-    theme.setdefault('bridge', blend_color(theme['road_primary'], theme['text'], 0.35))
-    theme.setdefault('tunnel', blend_color(theme['road_residential'], theme['bg'], 0.5))
-    theme.setdefault('airport', blend_color(theme['water'], theme['bg'], 0.6))
-    theme.setdefault('runway', blend_color(theme['road_primary'], theme['text'], 0.2))
     return theme
 
 def load_theme(theme_name="feature_based"):
@@ -113,7 +110,7 @@ def load_theme(theme_name="feature_based"):
     
     if not os.path.exists(theme_file):
         print(f"⚠ Theme file '{theme_file}' not found. Using default feature_based theme.")
-        return apply_theme_defaults({})
+        return DEFAULT_THEME.copy()
     
     with open(theme_file, 'r') as f:
         theme = json.load(f)
@@ -164,38 +161,48 @@ def normalize_highway(highway):
         return highway[0] if highway else 'unclassified'
     return highway
 
+def theme_has(key):
+    return key in THEME and THEME[key] not in (None, '')
+
+def theme_color(key):
+    return THEME[key] if theme_has(key) else None
+
 def get_road_color(highway):
     highway = normalize_highway(highway)
     if highway in ['motorway', 'motorway_link']:
-        return THEME['road_motorway']
+        return theme_color('road_motorway')
     if highway in ['trunk', 'trunk_link', 'primary', 'primary_link']:
-        return THEME['road_primary']
+        return theme_color('road_primary')
     if highway in ['secondary', 'secondary_link']:
-        return THEME['road_secondary']
+        return theme_color('road_secondary')
     if highway in ['tertiary', 'tertiary_link']:
-        return THEME['road_tertiary']
+        return theme_color('road_tertiary')
     if highway in ['residential', 'living_street', 'unclassified']:
-        return THEME['road_residential']
-    return THEME['road_default']
+        return theme_color('road_residential')
+    return theme_color('road_default')
 
 def get_road_width(highway):
     highway = normalize_highway(highway)
     if highway in ['motorway', 'motorway_link']:
-        return 1.2
+        return 1.2 if theme_has('road_motorway') else 0
     if highway in ['trunk', 'trunk_link', 'primary', 'primary_link']:
-        return 1.0
+        return 1.0 if theme_has('road_primary') else 0
     if highway in ['secondary', 'secondary_link']:
-        return 0.8
+        return 0.8 if theme_has('road_secondary') else 0
     if highway in ['tertiary', 'tertiary_link']:
-        return 0.6
-    return 0.4
+        return 0.6 if theme_has('road_tertiary') else 0
+    return 0.4 if theme_has('road_residential') or theme_has('road_default') else 0
 
 def get_edge_colors_by_type(G):
     """
     Assigns colors to edges based on road type hierarchy.
     Returns a list of colors corresponding to each edge in the graph.
     """
-    return [get_road_color(data.get('highway', 'unclassified')) for _, _, data in G.edges(data=True)]
+    colors = []
+    for _, _, data in G.edges(data=True):
+        color = get_road_color(data.get('highway', 'unclassified'))
+        colors.append(color if color else THEME['bg'])
+    return colors
 
 def get_edge_widths_by_type(G):
     """
@@ -246,76 +253,99 @@ def filter_geometry_types(gdf, allowed_types):
         return gdf
     return gdf[gdf.geometry.geom_type.isin(allowed_types)]
 
-def create_poster(city, country, point, dist, output_file, figsize, dpi, show_text):
+def create_poster(city, country, point, dist, output_file, figsize, dpi, show_text, show_gradient):
     print(f"\nGenerating map for {city}, {country}...")
     
     # Progress bar for data fetching
     with tqdm(total=7, desc="Fetching map data", unit="step", bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}') as pbar:
         # 1. Fetch Street Network
         pbar.set_description("Downloading street network")
-        G = ox.graph_from_point(point, dist=dist, dist_type='bbox', network_type='all')
+        G = ox.graph_from_point(
+            point,
+            dist=dist,
+            dist_type='bbox',
+            network_type='all',
+            truncate_by_edge=True,
+            retain_all=True
+        )
         pbar.update(1)
         time.sleep(0.5)  # Rate limit between requests
         
         # 2. Fetch Water Features
         pbar.set_description("Downloading water features")
-        try:
-            water = ox.features_from_point(point, tags={'natural': 'water', 'waterway': 'riverbank'}, dist=dist)
-        except:
-            water = None
+        water = None
+        if theme_has('water'):
+            try:
+                water = ox.features_from_point(point, tags={'natural': 'water', 'waterway': 'riverbank'}, dist=dist)
+            except:
+                water = None
         pbar.update(1)
         time.sleep(0.3)
         
         # 3. Fetch Railways
         pbar.set_description("Downloading railways")
-        try:
-            railways = ox.features_from_point(point, tags={'railway': ['rail', 'light_rail', 'tram', 'subway', 'narrow_gauge', 'monorail']}, dist=dist)
-        except:
-            railways = None
+        railways = None
+        if theme_has('railway'):
+            try:
+                railways = ox.features_from_point(point, tags={'railway': ['rail', 'light_rail', 'tram', 'subway', 'narrow_gauge', 'monorail']}, dist=dist)
+            except:
+                railways = None
         pbar.update(1)
         time.sleep(0.2)
 
         # 4. Fetch Waterways
         pbar.set_description("Downloading waterways")
-        try:
-            waterways = ox.features_from_point(point, tags={'waterway': ['river', 'stream', 'canal', 'drain', 'ditch']}, dist=dist)
-        except:
-            waterways = None
+        waterways = None
+        if theme_has('waterway'):
+            try:
+                waterways = ox.features_from_point(point, tags={'waterway': ['river', 'stream', 'canal', 'drain', 'ditch']}, dist=dist)
+            except:
+                waterways = None
         pbar.update(1)
         time.sleep(0.2)
 
         # 5. Fetch Buildings + Contours
         pbar.set_description("Downloading buildings and contours")
-        try:
-            buildings = ox.features_from_point(point, tags={'building': True}, dist=dist)
-        except:
-            buildings = None
-        try:
-            contours = ox.features_from_point(point, tags={'natural': 'contour'}, dist=dist)
-        except:
-            contours = None
+        buildings = None
+        contours = None
+        if theme_has('buildings'):
+            try:
+                buildings = ox.features_from_point(point, tags={'building': True}, dist=dist)
+            except:
+                buildings = None
+        if theme_has('contours'):
+            try:
+                contours = ox.features_from_point(point, tags={'natural': 'contour'}, dist=dist)
+            except:
+                contours = None
         pbar.update(1)
         time.sleep(0.2)
 
         # 6. Fetch Subways
         pbar.set_description("Downloading subways")
-        try:
-            subways = ox.features_from_point(point, tags={'railway': 'subway'}, dist=dist)
-        except:
-            subways = None
+        subways = None
+        if theme_has('subway'):
+            try:
+                subways = ox.features_from_point(point, tags={'railway': 'subway'}, dist=dist)
+            except:
+                subways = None
         pbar.update(1)
         time.sleep(0.2)
 
         # 7. Fetch Airports + Runways
         pbar.set_description("Downloading airports and runways")
-        try:
-            airports = ox.features_from_point(point, tags={'aeroway': ['aerodrome', 'terminal', 'apron']}, dist=dist)
-        except:
-            airports = None
-        try:
-            runways = ox.features_from_point(point, tags={'aeroway': ['runway', 'taxiway']}, dist=dist)
-        except:
-            runways = None
+        airports = None
+        runways = None
+        if theme_has('airport'):
+            try:
+                airports = ox.features_from_point(point, tags={'aeroway': ['aerodrome', 'terminal', 'apron']}, dist=dist)
+            except:
+                airports = None
+        if theme_has('runway'):
+            try:
+                runways = ox.features_from_point(point, tags={'aeroway': ['runway', 'taxiway']}, dist=dist)
+            except:
+                runways = None
         pbar.update(1)
     
     print("✓ All data downloaded successfully!")
@@ -338,35 +368,35 @@ def create_poster(city, country, point, dist, output_file, figsize, dpi, show_te
     railways_lines = filter_geometry_types(railways, ['LineString', 'MultiLineString'])
     contours_lines = filter_geometry_types(contours, ['LineString', 'MultiLineString'])
 
-    if water_polygons is not None and not water_polygons.empty:
+    if theme_has('water') and water_polygons is not None and not water_polygons.empty:
         water_polygons.plot(ax=ax, facecolor=THEME['water'], edgecolor='none', zorder=1)
-    if airport_polygons is not None and not airport_polygons.empty:
+    if theme_has('airport') and airport_polygons is not None and not airport_polygons.empty:
         airport_polygons.plot(ax=ax, facecolor=THEME['airport'], edgecolor='none', zorder=1.4)
-    if building_polygons is not None and not building_polygons.empty:
+    if theme_has('buildings') and building_polygons is not None and not building_polygons.empty:
         building_polygons.plot(ax=ax, facecolor=THEME['buildings'], edgecolor='none', zorder=2.3)
-    if contours_lines is not None and not contours_lines.empty:
+    if theme_has('contours') and contours_lines is not None and not contours_lines.empty:
         contours_lines.plot(ax=ax, color=THEME['contours'], linewidth=0.4, alpha=0.6, zorder=2.6)
-    if waterways_lines is not None and not waterways_lines.empty:
+    if theme_has('waterway') and waterways_lines is not None and not waterways_lines.empty:
         waterways_lines.plot(ax=ax, color=THEME['waterway'], linewidth=0.6, zorder=2.8)
-    if runways_lines is not None and not runways_lines.empty:
-        runways_lines.plot(ax=ax, color=THEME['runway'], linewidth=0.8, zorder=2.85)
-    if subways_lines is not None and not subways_lines.empty:
+    if theme_has('runway') and runways_lines is not None and not runways_lines.empty:
+        runways_lines.plot(ax=ax, color=THEME['runway'], linewidth=2, zorder=2.85)
+    if theme_has('subway') and subways_lines is not None and not subways_lines.empty:
         subways_lines.plot(ax=ax, color=THEME['subway'], linewidth=0.5, zorder=2.87)
-    if railways_lines is not None and not railways_lines.empty:
-        railways_lines.plot(ax=ax, color=THEME['railway'], linewidth=0.6, zorder=2.9)
+    if theme_has('railway') and railways_lines is not None and not railways_lines.empty:
+        railways_lines.plot(ax=ax, color=THEME['railway'], linewidth=1, zorder=2.9)
     
     # Layer 2: Roads with hierarchy coloring
     print("Applying road hierarchy colors...")
     edge_colors = get_edge_colors_by_type(G)
     edge_widths = get_edge_widths_by_type(G)
-    
-    ox.plot_graph(
-        G, ax=ax, bgcolor=THEME['bg'],
-        node_size=0,
-        edge_color=edge_colors,
-        edge_linewidth=edge_widths,
-        show=False, close=False
-    )
+    if any(width > 0 for width in edge_widths):
+        ox.plot_graph(
+            G, ax=ax, bgcolor=THEME['bg'],
+            node_size=0,
+            edge_color=edge_colors,
+            edge_linewidth=edge_widths,
+            show=False, close=False
+        )
 
     edges = ox.graph_to_gdfs(G, nodes=False, edges=True, fill_edge_geometry=True)
     if edges is not None and not edges.empty:
@@ -379,7 +409,7 @@ def create_poster(city, country, point, dist, output_file, figsize, dpi, show_te
         bridge_edges = filter_edges_by_tag(edges, 'bridge')
         tunnel_edges = filter_edges_by_tag(edges, 'tunnel')
 
-        if not tunnel_edges.empty:
+        if theme_has('tunnel') and not tunnel_edges.empty:
             tunnel_widths = [get_road_width(h) for h in tunnel_edges.get('highway', [])]
             tunnel_edges.plot(
                 ax=ax,
@@ -389,7 +419,7 @@ def create_poster(city, country, point, dist, output_file, figsize, dpi, show_te
                 alpha=0.7,
                 zorder=3.4
             )
-        if not bridge_edges.empty:
+        if theme_has('bridge') and not bridge_edges.empty:
             bridge_widths = [get_road_width(h) + 0.2 for h in bridge_edges.get('highway', [])]
             bridge_edges.plot(
                 ax=ax,
@@ -400,8 +430,9 @@ def create_poster(city, country, point, dist, output_file, figsize, dpi, show_te
 
     
     # Layer 3: Gradients (Top and Bottom)
-    create_gradient_fade(ax, THEME['gradient_color'], location='bottom', zorder=10)
-    create_gradient_fade(ax, THEME['gradient_color'], location='top', zorder=10)
+    if show_gradient:
+        create_gradient_fade(ax, THEME['gradient_color'], location='bottom', zorder=10)
+        create_gradient_fade(ax, THEME['gradient_color'], location='top', zorder=10)
     
     # 4. Typography using Roboto font
     if show_text:
@@ -505,6 +536,7 @@ Options:
   --height          Poster height in inches (default: 16)
   --dpi             Output DPI (default: 300)
   --no-text         Render map without labels or attribution
+  --no-gradient     Render map without top/bottom gradient fades
   --list-themes     List all available themes
 
 Distance guide:
@@ -564,6 +596,7 @@ Examples:
     parser.add_argument('--height', type=float, default=DEFAULT_FIGSIZE[1], help='Poster height in inches (default: 16)')
     parser.add_argument('--dpi', type=int, default=DEFAULT_DPI, help='Output DPI (default: 300)')
     parser.add_argument('--no-text', action='store_true', help='Render map without labels or attribution')
+    parser.add_argument('--no-gradient', action='store_true', help='Render map without top/bottom gradient fades')
     parser.add_argument('--list-themes', action='store_true', help='List all available themes')
     
     args = parser.parse_args()
@@ -614,7 +647,7 @@ Examples:
 
         figsize = resolve_figsize(args.width, args.height)
         output_file = generate_output_filename(location_label, args.theme)
-        create_poster(display_city, display_country, coords, args.distance, output_file, figsize, args.dpi, not args.no_text)
+        create_poster(display_city, display_country, coords, args.distance, output_file, figsize, args.dpi, not args.no_text, not args.no_gradient)
         
         print("\n" + "=" * 50)
         print("✓ Poster generation complete!")

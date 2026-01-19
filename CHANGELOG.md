@@ -12,6 +12,7 @@ This project follows the "Keep a Changelog" format.
 - Additional map layers: railways, subways, waterways, buildings, contours, bridges, tunnels, airports.
 - New themes: `minimalist_dark`, `minimalist_light`.
 - Theme defaults extended to support new layer colors.
+- Theme-driven visibility: omit a key in a theme to skip rendering that layer or road class.
 
 ### Changed
 - README updated with new options, layers, and theme keys.
@@ -20,4 +21,4 @@ This project follows the "Keep a Changelog" format.
 - N/A
 
 ### Fixed
-- N/A
+- Preserve edges that cross the bbox so long motorways render fully (`truncate_by_edge=True`, `retain_all=True`).
