@@ -184,11 +184,11 @@ def get_road_color(highway):
 def get_road_width(highway):
     highway = normalize_highway(highway)
     if highway in ['motorway', 'motorway_link']:
-        return 1.2 if theme_has('road_motorway') else 0
+        return 2 if theme_has('road_motorway') else 0
     if highway in ['trunk', 'trunk_link', 'primary', 'primary_link']:
-        return 1.0 if theme_has('road_primary') else 0
+        return 1.8 if theme_has('road_primary') else 0
     if highway in ['secondary', 'secondary_link']:
-        return 0.8 if theme_has('road_secondary') else 0
+        return 1.6 if theme_has('road_secondary') else 0
     if highway in ['tertiary', 'tertiary_link']:
         return 0.6 if theme_has('road_tertiary') else 0
     return 0.4 if theme_has('road_residential') or theme_has('road_default') else 0

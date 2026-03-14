@@ -10,8 +10,8 @@
   "road_primary": "#D77A61",
   "road_secondary": "#7CA7AC",
   "road_tertiary": "#6E9075",
-  "road_residential": "#8A9AA0",
   "road_default": "#556677",
+  "road_residential": "#556677",
   "airport": "#556677",
-  "runway": "#D77A61"
+  "runway": "#FFFFFF"
 }
